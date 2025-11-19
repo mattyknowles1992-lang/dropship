@@ -35,12 +35,15 @@ export function Layout({ children }: LayoutProps) {
       <header className="sticky top-0 z-20 border-b border-[#D9A441]/40 bg-[#FFF9F2]/95 text-[#1A1A1A] shadow-md shadow-black/20 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:py-4">
           <Link href="/" className="flex items-center gap-3">
-            <div className="relative h-10 w-10 overflow-hidden rounded-full border border-red-600/70 bg-white shadow-sm shadow-red-900/50" aria-hidden="true">
+            <div
+              className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-red-600/70 bg-white shadow-sm shadow-red-900/50"
+              aria-hidden="true"
+            >
               <Image
                 src="/logo-holly-jolly.png"
                 alt="Holly Jolly Savings logo"
-                fill
-                sizes="40px"
+                width={100}
+                height={100}
                 className="object-cover"
               />
             </div>
