@@ -42,8 +42,7 @@ const baseCategories: Record<CategorySlug, Omit<Category, "name" | "intro">> = {
 };
 
 export function getCategories(region: Region): Category[] {
-  const regionPrefix =
-    region === "uk" ? "UK " : region === "us" ? "USA " : "";
+  const regionPrefix = region === "uk" ? "UK " : "";
 
   return Object.values(baseCategories).map((cat) => {
     const nameBase = cat.slug
@@ -54,9 +53,7 @@ export function getCategories(region: Region): Category[] {
       ...cat,
       name: `${regionPrefix}${nameBase}`,
       intro:
-        region === "uk"
-          ? "Explore Christmas gift ideas with fast UK Christmas delivery, from stocking fillers to thoughtful presents."
-          : "Discover Christmas gift ideas with fast US holiday shipping, from stocking stuffers to special presents.",
+        "Explore Christmas gift ideas with fast UK Christmas delivery, from stocking fillers to thoughtful presents.",
     };
   });
 }

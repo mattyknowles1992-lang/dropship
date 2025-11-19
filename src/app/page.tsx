@@ -30,18 +30,15 @@ export default function Home() {
         </div>
         <div className="space-y-6 rounded-3xl border border-[#D9A441]/60 bg-black/90 p-4 shadow-lg shadow-black/70 sm:p-6 lg:p-7">
           <p className="inline-flex rounded-full bg-red-800/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-red-100">
-            Christmas {new Date().getFullYear()} • {" "}
-            {region.id === "uk" ? "UK Christmas Gifts" : "US Christmas Gifts"}
+            Christmas {new Date().getFullYear()} • UK Christmas Gifts
           </p>
           <h1 className="text-balance text-3xl font-semibold tracking-tight text-[#FFF9F2] sm:text-4xl md:text-5xl">
             Christmas gifts that arrive in time—and feel unforgettable.
           </h1>
           <p className="max-w-xl text-sm sm:text-base text-[#E5E7EB]">
             Choose ready-to-gift Christmas presents, cosy stocking fillers and
-            Secret Santa ideas that ship with tracking. We focus on reliable
-            {" "}
-            {region.id === "uk" ? "UK" : "US"} Christmas delivery so your gifts
-            land under the tree, not after it.
+            Secret Santa ideas that ship with tracking. We focus on reliable UK
+            Christmas delivery so your gifts land under the tree, not after it.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link

@@ -78,11 +78,17 @@ function MiniCarousel({ slides, priority }: MiniCarouselProps) {
 
 export function HeroCarousel() {
   return (
-    <div className="relative h-[260px] w-full overflow-hidden rounded-2xl border border-[#D9A441]/60 bg-[#FFF9F2] shadow-lg shadow-black/30 sm:h-[320px] md:h-[360px]">
-      <div className="relative flex h-full w-full gap-3 px-3 py-3">
-        <MiniCarousel slides={LEFT_SLIDES} priority />
-        <MiniCarousel slides={MIDDLE_SLIDES} />
-        <MiniCarousel slides={RIGHT_SLIDES} />
+    <div className="relative w-full overflow-hidden rounded-2xl border border-[#D9A441]/60 bg-[#FFF9F2] shadow-lg shadow-black/30">
+      <div className="relative flex h-full w-full flex-col gap-3 px-3 py-3 sm:h-[320px] sm:flex-row md:h-[360px]">
+        <div className="h-52 w-full sm:h-full sm:flex-1">
+          <MiniCarousel slides={LEFT_SLIDES} priority />
+        </div>
+        <div className="h-52 w-full sm:h-full sm:flex-1">
+          <MiniCarousel slides={MIDDLE_SLIDES} />
+        </div>
+        <div className="h-52 w-full sm:h-full sm:flex-1">
+          <MiniCarousel slides={RIGHT_SLIDES} />
+        </div>
       </div>
     </div>
   );

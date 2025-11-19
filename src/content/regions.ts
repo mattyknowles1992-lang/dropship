@@ -19,7 +19,7 @@ export const REGIONS: Record<Region, RegionConfig> = {
     locale: "en-US",
     defaultTitle: "Christmas Gifts 2025 | Unique Holiday Presents Online",
     defaultDescription:
-      "Shop Christmas gifts 2025 online in the USA – festive gift ideas, Secret Santa presents and stocking fillers with fast US delivery.",
+        "Shop Christmas gifts 2025 online in the USA – festive gift ideas, Secret Santa presents and stocking fillers with fast US delivery.",
   },
   uk: {
     id: "uk",

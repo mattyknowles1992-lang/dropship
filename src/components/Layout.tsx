@@ -13,7 +13,7 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="relative min-h-screen text-[#1A1A1A]">
       <div
-        className="fixed inset-0 -z-10 bg-[url('/backgrounds/bg-main.jpg')] bg-cover bg-center bg-fixed"
+        className="fixed inset-0 -z-10 bg-[url('/backgrounds/bg-main.jpg')] bg-cover bg-center bg-no-repeat bg-black"
         aria-hidden="true"
       />
       <Snowfall />
@@ -21,7 +21,7 @@ export function Layout({ children }: LayoutProps) {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2">
           <p>
             🎁 Order by <span className="font-semibold">22 December</span> for guaranteed
-            Christmas delivery in the {region.id === "uk" ? "UK" : "USA"}.
+            Christmas delivery across the UK.
           </p>
           <p className="flex gap-3">
             <span>Free Christmas returns until 15 January</span>
@@ -94,7 +94,7 @@ export function Layout({ children }: LayoutProps) {
             </p>
             <p>
               Curated Christmas gifts, stocking fillers and Secret Santa ideas with
-              tracked delivery across the {region.id === "uk" ? "UK" : "USA"}.
+              tracked delivery across the UK.
             </p>
           </div>
           <div className="space-y-2" id="shipping">
@@ -125,8 +125,7 @@ export function Layout({ children }: LayoutProps) {
             © {new Date().getFullYear()} {region.siteName}. All rights reserved.
           </p>
           <p>
-            Optimised for {region.id === "uk" ? "UK" : "US"} Christmas gift buyers
-            looking for trusted online presents.
+            Optimised for UK Christmas gift buyers looking for trusted online presents.
           </p>
         </div>
       </footer>
