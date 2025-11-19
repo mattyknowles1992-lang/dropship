@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ReactNode } from "react";
 import { getCurrentRegion } from "@/content/regions";
 import { Snowfall } from "@/components/Snowfall";
@@ -34,15 +35,21 @@ export function Layout({ children }: LayoutProps) {
       <header className="sticky top-0 z-20 border-b border-[#D9A441]/40 bg-[#FFF9F2]/95 text-[#1A1A1A] shadow-md shadow-black/20 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:py-4">
           <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0F3D2E] text-xl" aria-hidden="true">
-              🎄
+            <div className="relative h-10 w-10 overflow-hidden rounded-full border border-red-600/70 bg-white shadow-sm shadow-red-900/50" aria-hidden="true">
+              <Image
+                src="/logo-holly-jolly.png"
+                alt="Holly Jolly Savings logo"
+                fill
+                sizes="40px"
+                className="object-cover"
+              />
             </div>
             <div className="leading-tight">
               <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0F3D2E]">
-                Christmas Gifts Co.
+                Holly Jolly Savings
               </div>
               <div className="text-[11px] text-[#4B5563]">
-                Warm, trusted gifts for {region.id === "uk" ? "UK" : "US"} Christmas shoppers
+                Warm, trusted gifts for UK Christmas shoppers
               </div>
             </div>
           </Link>
