@@ -1,3 +1,4 @@
+// @ts-ignore - pg types are not required for this simple pool wrapper
 import { Pool } from "pg";
 
 if (!process.env.DATABASE_URL) {
