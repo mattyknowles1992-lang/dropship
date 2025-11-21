@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 
 export async function POST(request: Request) {
   try {
@@ -25,15 +24,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "path is required" }, { status: 400 });
     }
 
-    await prisma.pageView.create({
-      data: {
-        path,
-        region,
-        sessionId,
-        referrer,
-        userAgent,
-        userId,
-      },
+    // Tracking is currently a no-op in production until the PageView model exists.
+    console.log("Page view", {
+      path,
+      region,
+      sessionId,
+      referrer,
+      userAgent,
+      userId,
     });
 
     return NextResponse.json({ ok: true });
