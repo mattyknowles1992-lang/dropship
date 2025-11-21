@@ -4,7 +4,8 @@ export type CategorySlug =
   | "gifts-for-him"
   | "gifts-for-her"
   | "gifts-for-kids"
-  | "secret-santa";
+  | "secret-santa"
+  | "stocking-fillers";
 
 export type Category = {
   slug: CategorySlug;
@@ -38,6 +39,12 @@ const baseCategories: Record<CategorySlug, Omit<Category, "name" | "intro">> = {
     seoTitle: "Secret Santa Gifts 2025 | Funny & Affordable Christmas Presents",
     seoDescription:
       "Discover Secret Santa gifts 2025 – funny office presents, budget Christmas gifts and stocking fillers under $20/£15.",
+  },
+  "stocking-fillers": {
+    slug: "stocking-fillers",
+    seoTitle: "Stocking Fillers 2025 | Cheap & Fun Christmas Gifts",
+    seoDescription:
+      "Discover stocking fillers for Christmas 2025 – fun, affordable small gifts and last-minute Christmas treats for all ages.",
   },
 };
 

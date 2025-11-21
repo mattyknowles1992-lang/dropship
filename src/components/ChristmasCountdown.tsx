@@ -11,7 +11,10 @@ type TimeLeft = {
 
 function getNextChristmas(): Date {
   const now = new Date();
-  const year = now.getMonth() === 11 && now.getDate() > 25 ? now.getFullYear() + 1 : now.getFullYear();
+  const year =
+    now.getMonth() === 11 && now.getDate() > 25
+      ? now.getFullYear() + 1
+      : now.getFullYear();
   return new Date(year, 11, 25, 0, 0, 0, 0);
 }
 
@@ -28,7 +31,6 @@ function diffToTimeLeft(target: Date): TimeLeft {
 }
 
 export function ChristmasCountdown() {
-  const [target, setTarget] = useState<Date | null>(null);
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({
     days: 0,
     hours: 0,
@@ -37,45 +39,51 @@ export function ChristmasCountdown() {
   });
 
   useEffect(() => {
-    const next = getNextChristmas();
-    setTarget(next);
-    setTimeLeft(diffToTimeLeft(next));
-
-    const interval = setInterval(() => {
+    const update = () => {
+      const next = getNextChristmas();
       setTimeLeft(diffToTimeLeft(next));
-    }, 1000);
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
 
     return () => clearInterval(interval);
   }, []);
 
-  const isChristmas = timeLeft.days === 0 && timeLeft.hours === 0 && timeLeft.minutes === 0 && timeLeft.seconds === 0;
+  const isChristmas =
+    timeLeft.days === 0 &&
+    timeLeft.hours === 0 &&
+    timeLeft.minutes === 0 &&
+    timeLeft.seconds === 0;
 
   return (
-    <div className="inline-flex items-center gap-4 rounded-2xl border border-[#D9A441]/60 bg-[#FFF9F2] px-5 py-4 text-xs text-[#1A1A1A] shadow-sm shadow-black/20">
-      <span className="text-xl" aria-hidden="true">
-        🎁
+    <div className="inline-flex items-center gap-6 rounded-2xl border border-[#D9A441]/60 bg-[#FFF9F2] px-8 py-5 text-sm text-[#1A1A1A] shadow-sm shadow-black/20">
+      <span className="text-3xl" aria-hidden="true">
+        🎄
       </span>
       {isChristmas ? (
         <p className="text-sm font-semibold text-[#B3202A]">
-          It&apos;s Christmas Day! Last-minute gifts now become New Year treats.
+          It's Christmas Day! Last-minute gifts now become New Year treats.
         </p>
       ) : (
         <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B3202A]">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#B3202A]">
             Countdown to Christmas
           </p>
-          <div className="flex gap-2">
-            {([
-              ["Days", timeLeft.days],
-              ["Hours", timeLeft.hours],
-              ["Mins", timeLeft.minutes],
-              ["Secs", timeLeft.seconds],
-            ] as const).map(([label, value]) => (
+          <div className="flex gap-3">
+            {(
+              [
+                ["Days", timeLeft.days],
+                ["Hours", timeLeft.hours],
+                ["Mins", timeLeft.minutes],
+                ["Secs", timeLeft.seconds],
+              ] as const
+            ).map(([label, value]) => (
               <div
                 key={label}
-                className="flex min-w-[3.2rem] flex-col items-center rounded-xl bg-[#B3202A] px-2 py-1"
+                className="flex min-w-[3.2rem] flex-col items-center rounded-xl bg-[#B3202A] px-2.5 py-1.5"
               >
-                <span className="text-sm font-semibold text-[#FFF9F2] tabular-nums">
+                <span className="text-base font-semibold text-[#FFF9F2] tabular-nums">
                   {value.toString().padStart(2, "0")}
                 </span>
                 <span className="text-[9px] uppercase tracking-[0.16em] text-[#D9A441]">
@@ -89,3 +97,4 @@ export function ChristmasCountdown() {
     </div>
   );
 }
+

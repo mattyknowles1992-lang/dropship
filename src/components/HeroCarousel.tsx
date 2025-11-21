@@ -2,28 +2,17 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { defaultAssets } from "@/content/assets";
 
 type Slide = {
   src: string;
   alt: string;
 };
 
-const LEFT_SLIDES: Slide[] = [
-  { src: "/carousel/left-1.jpg", alt: "Left carousel image 1" },
-  { src: "/carousel/left-2.jpg", alt: "Left carousel image 2" },
-  { src: "/carousel/left-3.jpg", alt: "Left carousel image 3" },
-];
-
 const MIDDLE_SLIDES: Slide[] = [
   { src: "/carousel/middle-1.jpg", alt: "Middle carousel image 1" },
   { src: "/carousel/middle-2.jpg", alt: "Middle carousel image 2" },
   { src: "/carousel/middle-3.jpg", alt: "Middle carousel image 3" },
-];
-
-const RIGHT_SLIDES: Slide[] = [
-  { src: "/carousel/right-1.jpg", alt: "Right carousel image 1" },
-  { src: "/carousel/right-2.jpg", alt: "Right carousel image 2" },
-  { src: "/carousel/right-3.jpg", alt: "Right carousel image 3" },
 ];
 
 const INTERVAL_MS = 6000;
@@ -76,18 +65,44 @@ function MiniCarousel({ slides, priority }: MiniCarouselProps) {
   );
 }
 
-export function HeroCarousel() {
+type HeroCarouselProps = {
+  heroPrimary?: string;
+  heroSecondary?: string;
+};
+
+export function HeroCarousel({
+  heroPrimary,
+  heroSecondary,
+}: HeroCarouselProps) {
+  const leftSlides: Slide[] = [
+    {
+      src: heroPrimary ?? defaultAssets.heroPrimary,
+      alt: "Hero primary image",
+    },
+    { src: "/carousel/left-2.jpg", alt: "Left carousel image 2" },
+    { src: "/carousel/left-3.jpg", alt: "Left carousel image 3" },
+  ];
+
+  const rightSlides: Slide[] = [
+    {
+      src: heroSecondary ?? defaultAssets.heroSecondary,
+      alt: "Hero secondary image",
+    },
+    { src: "/carousel/right-2.jpg", alt: "Right carousel image 2" },
+    { src: "/carousel/right-3.jpg", alt: "Right carousel image 3" },
+  ];
+
   return (
     <div className="relative w-full overflow-hidden rounded-2xl border border-[#D9A441]/60 bg-[#FFF9F2] shadow-lg shadow-black/30">
       <div className="relative flex h-full w-full flex-col gap-3 px-3 py-3 sm:h-[320px] sm:flex-row md:h-[360px]">
         <div className="h-52 w-full sm:h-full sm:flex-1">
-          <MiniCarousel slides={LEFT_SLIDES} priority />
+          <MiniCarousel slides={leftSlides} priority />
         </div>
         <div className="h-52 w-full sm:h-full sm:flex-1">
           <MiniCarousel slides={MIDDLE_SLIDES} />
         </div>
         <div className="h-52 w-full sm:h-full sm:flex-1">
-          <MiniCarousel slides={RIGHT_SLIDES} />
+          <MiniCarousel slides={rightSlides} />
         </div>
       </div>
     </div>
