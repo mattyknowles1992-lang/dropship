@@ -33,12 +33,25 @@ function toSlug(name: string, id?: string) {
   return base;
 }
 
+function buildTags(input: CjApiProduct) {
+  const tags = Array.isArray(input.tags) ? [...input.tags] : [];
+  if (input.warehouseId) tags.push(`warehouse:${input.warehouseId}`);
+  else if (input.warehouseCode) tags.push(`warehouse:${input.warehouseCode}`);
+  else if (input.warehouse) tags.push(`warehouse:${input.warehouse}`);
+  return tags;
+}
+
 function normalizeProduct(input: CjApiProduct) {
   const price = input.sellPrice ?? input.retailPrice ?? 0;
   const compareAt =
     input.retailPrice && input.sellPrice && input.retailPrice > input.sellPrice
       ? input.retailPrice
       : null;
+
+  const image = input.mainImage ?? input.image ?? "";
+  if (!image || price <= 0) {
+    return null;
+  }
 
   return {
     externalId: input.id ?? input.externalId,
@@ -47,11 +60,11 @@ function normalizeProduct(input: CjApiProduct) {
     description: input.description ?? null,
     price,
     compareAt,
-    image: input.mainImage ?? input.image ?? "",
+    image,
     imageAlt: input.name,
     showInUk: input.showInUk ?? true,
     showInUs: input.showInUs ?? true,
-    tags: input.tags ?? [],
+    tags: buildTags(input),
     supplier: "cjdropshipping",
     sourceUrl: input.url ?? null,
   };
@@ -61,7 +74,7 @@ export async function importCjProducts(
   region: Region,
   feed: CjApiProduct[],
 ): Promise<{ imported: number }> {
-  const normalized = feed.map(normalizeProduct);
+  const normalized = feed.map(normalizeProduct).filter((p): p is NonNullable<typeof p> => Boolean(p));
 
   let imported = 0;
   for (const product of normalized) {
