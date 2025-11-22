@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { Region } from "@/content/regions";
-import { importCjProducts, fetchCjFeed } from "@/lib/importers/cj";
+import { importCjProducts, fetchCjFeedAll } from "@/lib/importers/cj";
 
 function isAuthorized(request: Request) {
   const token = process.env.ADMIN_API_TOKEN;
@@ -24,7 +24,10 @@ export async function POST(request: Request) {
     const feed =
       Array.isArray(body.products) && body.products.length > 0
         ? (body.products as any[])
-        : await fetchCjFeed();
+        : await fetchCjFeedAll({
+            pageSize: body.pageSize,
+            maxPages: body.maxPages,
+          });
 
     const result = await importCjProducts(region, feed);
     return NextResponse.json({ imported: result.imported, region, sourceCount: feed.length });

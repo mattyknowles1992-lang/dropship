@@ -17,6 +17,9 @@ type CjApiProduct = {
   externalId?: string;
   sourceUrl?: string;
   variants?: unknown;
+  warehouse?: string;
+  warehouseCode?: string;
+  warehouseId?: string;
 };
 
 function toSlug(name: string, id: string) {
@@ -76,6 +79,69 @@ export async function importCjProducts(
   }
 
   return { imported };
+}
+
+// ---------- Full feed fetch with pagination ----------
+
+type FetchOptions = {
+  pageSize?: number;
+  maxPages?: number;
+};
+
+async function fetchCjFeedPage(pageNum: number, pageSize: number): Promise<CjApiProduct[]> {
+  const url = process.env.CJ_API_URL;
+  if (!url) return [];
+
+  const token = process.env.CJ_API_TOKEN;
+  if (!token) throw new Error("CJ_API_TOKEN is not set");
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "CJ-Access-Token": token,
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ pageNum, pageSize }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`CJ API returned ${res.status} ${text}`);
+  }
+
+  const data = await res.json();
+
+  // Handle common CJ response shapes
+  if (Array.isArray(data)) return data as CjApiProduct[];
+  if (Array.isArray((data as any).products)) return (data as any).products;
+  if (Array.isArray((data as any).data)) return (data as any).data;
+  if (Array.isArray((data?.data as any)?.products)) return (data.data as any).products;
+  if (Array.isArray((data?.data as any)?.list)) return (data.data as any).list;
+  if (Array.isArray((data as any).result)) return (data as any).result;
+  if (Array.isArray((data?.result as any)?.list)) return (data.result as any).list;
+  if (Array.isArray((data as any).list)) return (data as any).list;
+
+  return [];
+}
+
+export async function fetchCjFeedAll(options?: FetchOptions): Promise<CjApiProduct[]> {
+  const pageSize = options?.pageSize && options.pageSize > 0 ? options.pageSize : 100;
+  const maxPages = options?.maxPages && options.maxPages > 0 ? options.maxPages : 20;
+
+  const all: Record<string, CjApiProduct> = {};
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    const pageData = await fetchCjFeedPage(page, pageSize);
+    if (pageData.length === 0) break;
+    for (const item of pageData) {
+      all[item.id] = item;
+    }
+    if (pageData.length < pageSize) break; // no more pages
+  }
+
+  return Object.values(all);
 }
 
 // ---------- Variant + stock sync ----------
@@ -272,42 +338,5 @@ export async function calculateCjFreightQuote(params: FreightQuoteRequest) {
 }
 
 export async function fetchCjFeed(): Promise<CjApiProduct[]> {
-  const url = process.env.CJ_API_URL;
-  if (!url) {
-    return [];
-  }
-
-  const token = process.env.CJ_API_TOKEN;
-  if (!token) {
-    throw new Error("CJ_API_TOKEN is not set");
-  }
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "CJ-Access-Token": token,
-  };
-
-  // CJ product/list works as a POST with pagination; default to first page.
-  const res = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ pageNum: 1, pageSize: 50 }),
-  });
-  if (!res.ok) {
-    throw new Error(`CJ API returned ${res.status}`);
-  }
-
-  const data = await res.json();
-
-  // Handle common CJ response shapes
-  if (Array.isArray(data)) return data as CjApiProduct[];
-  if (Array.isArray((data as any).products)) return (data as any).products;
-  if (Array.isArray((data as any).data)) return (data as any).data;
-  if (Array.isArray((data?.data as any)?.products)) return (data.data as any).products;
-  if (Array.isArray((data?.data as any)?.list)) return (data.data as any).list;
-  if (Array.isArray((data as any).result)) return (data as any).result;
-  if (Array.isArray((data?.result as any)?.list)) return (data.result as any).list;
-  if (Array.isArray((data as any).list)) return (data as any).list;
-
-  throw new Error("Unexpected CJ API response shape");
+  return fetchCjFeedAll();
 }
