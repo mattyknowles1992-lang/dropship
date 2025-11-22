@@ -57,7 +57,7 @@ export async function importAliProducts(region: Region, feed: AliProductInput[])
         tags: item.tags ?? [],
         supplier: "aliexpress",
         sourceUrl: item.sourceUrl ?? null,
-        variants: item.variants ?? null,
+        variants: item.variants ?? undefined,
         stock: item.stock ?? null,
       },
       update: {
@@ -73,7 +73,7 @@ export async function importAliProducts(region: Region, feed: AliProductInput[])
         tags: item.tags ?? [],
         supplier: "aliexpress",
         sourceUrl: item.sourceUrl ?? null,
-        variants: item.variants ?? null,
+        variants: item.variants ?? undefined,
         stock: item.stock ?? null,
       },
     });
