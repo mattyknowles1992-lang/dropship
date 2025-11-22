@@ -89,6 +89,7 @@ export async function importCjProducts(
 type FetchOptions = {
   pageSize?: number;
   maxPages?: number;
+  throttleMs?: number;
 };
 
 async function fetchCjFeedPage(pageNum: number, pageSize: number): Promise<CjApiProduct[]> {
@@ -169,6 +170,7 @@ async function fetchCjFeedPage(pageNum: number, pageSize: number): Promise<CjApi
 export async function fetchCjFeedAll(options?: FetchOptions): Promise<CjApiProduct[]> {
   const pageSize = options?.pageSize && options.pageSize > 0 ? options.pageSize : 100;
   const maxPages = options?.maxPages && options.maxPages > 0 ? options.maxPages : 20;
+  const throttleMs = typeof options?.throttleMs === "number" && options.throttleMs > 0 ? options.throttleMs : 0;
 
   const all: Record<string, CjApiProduct> = {};
 
@@ -180,6 +182,11 @@ export async function fetchCjFeedAll(options?: FetchOptions): Promise<CjApiProdu
       all[key] = item;
     }
     if (pageData.length < pageSize) break; // no more pages
+
+    // Respect CJ rate limits (1 req/sec) if throttling is requested.
+    if (throttleMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, throttleMs));
+    }
   }
 
   return Object.values(all);
