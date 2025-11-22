@@ -92,6 +92,8 @@ model Product {
   showInUk    Boolean   @default(true)
   showInUs    Boolean   @default(true)
   tags        String[]
+  stock       Int?
+  variants    Json?
   supplier    String?
   externalId  String?   @unique
   sourceUrl   String?
