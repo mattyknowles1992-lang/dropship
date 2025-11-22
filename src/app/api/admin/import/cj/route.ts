@@ -14,6 +14,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (!process.env.CJ_API_TOKEN) {
+    return NextResponse.json({ error: "CJ_API_TOKEN is not set" }, { status: 500 });
+  }
+
   try {
     const body = (await request.json().catch(() => ({}))) as {
       region?: Region;
@@ -34,7 +38,13 @@ export async function POST(request: Request) {
     const result = await importCjProducts(region, feed);
     return NextResponse.json({ imported: result.imported, region, sourceCount: feed.length });
   } catch (error) {
-    console.error("CJ import failed", error);
-    return NextResponse.json({ error: "CJ import failed" }, { status: 500 });
+    const message =
+      error instanceof Error ? error.message : typeof error === "string" ? error : "CJ import failed";
+    const isRateLimited = message.includes("429") || message.toLowerCase().includes("too many requests");
+    console.error("CJ import failed", message);
+    return NextResponse.json(
+      { error: isRateLimited ? "CJ rate limit hit (1 req/sec). Retry in a second." : "CJ import failed", detail: message },
+      { status: isRateLimited ? 429 : 500 },
+    );
   }
 }
