@@ -10,9 +10,9 @@ type Slide = {
 };
 
 const MIDDLE_SLIDES: Slide[] = [
-  { src: "/carousel/middle-1.jpg", alt: "Middle carousel image 1" },
-  { src: "/carousel/middle-2.jpg", alt: "Middle carousel image 2" },
-  { src: "/carousel/middle-3.jpg", alt: "Middle carousel image 3" },
+  { src: "/carousel/middle-1.jpeg", alt: "Middle carousel image 1" },
+  { src: "/carousel/middle-2.jpeg", alt: "Middle carousel image 2" },
+  { src: "/carousel/middle-3.jpeg", alt: "Middle carousel image 3" },
 ];
 
 const INTERVAL_MS = 6000;
@@ -88,7 +88,7 @@ export function HeroCarousel({
       src: heroSecondary ?? defaultAssets.heroSecondary,
       alt: "Hero secondary image",
     },
-    { src: "/carousel/right-2.jpg", alt: "Right carousel image 2" },
+    { src: "/carousel/right-2.jpeg", alt: "Right carousel image 2" },
     { src: "/carousel/right-3.jpg", alt: "Right carousel image 3" },
   ];
 

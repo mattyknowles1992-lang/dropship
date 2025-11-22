@@ -9,5 +9,5 @@ export const defaultAssets: AssetConfig = {
   // Place files in public/uploads and reference them here
   logo: "/uploads/logo-holly-jolly.png",
   heroPrimary: "/uploads/hero-primary-1.jpg",
-  heroSecondary: "/uploads/hero-secondary-1.jpg",
+  heroSecondary: "/uploads/hero-primary-1.jpg",
 };
