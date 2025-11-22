@@ -92,7 +92,15 @@ type FetchOptions = {
   throttleMs?: number;
 };
 
-async function fetchCjFeedPage(pageNum: number, pageSize: number): Promise<CjApiProduct[]> {
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchCjFeedPage(
+  pageNum: number,
+  pageSize: number,
+  throttleMs?: number,
+): Promise<CjApiProduct[]> {
   const url = process.env.CJ_API_URL;
   if (!url) return [];
 
@@ -100,6 +108,7 @@ async function fetchCjFeedPage(pageNum: number, pageSize: number): Promise<CjApi
   if (!token) throw new Error("CJ_API_TOKEN is not set");
 
   const size = Math.max(pageSize, 10); // CJ enforces min pageSize of 10
+  const delayMs = throttleMs && throttleMs > 0 ? throttleMs : 1200;
 
   const headers: Record<string, string> = {
     "CJ-Access-Token": token,
@@ -110,14 +119,29 @@ async function fetchCjFeedPage(pageNum: number, pageSize: number): Promise<CjApi
     pageSize: String(size),
   }).toString();
 
-  const res = await fetch(`${url}?${query}`, {
-    method: "GET",
-    headers,
-  });
+  let attempt = 0;
+  let res: Response | null = null;
+  while (attempt < 3) {
+    attempt += 1;
+    res = await fetch(`${url}?${query}`, {
+      method: "GET",
+      headers,
+    });
 
-  if (!res.ok) {
+    if (res.ok) break;
+
+    // Handle rate limit with backoff.
+    if (res.status === 429 && attempt < 3) {
+      await sleep(delayMs);
+      continue;
+    }
+
     const text = await res.text().catch(() => "");
     throw new Error(`CJ API returned ${res.status} ${text}`);
+  }
+
+  if (!res) {
+    throw new Error("CJ API request did not complete");
   }
 
   const data = await res.json();
@@ -175,7 +199,7 @@ export async function fetchCjFeedAll(options?: FetchOptions): Promise<CjApiProdu
   const all: Record<string, CjApiProduct> = {};
 
   for (let page = 1; page <= maxPages; page += 1) {
-    const pageData = await fetchCjFeedPage(page, pageSize);
+    const pageData = await fetchCjFeedPage(page, pageSize, throttleMs);
     if (pageData.length === 0) break;
     for (const item of pageData) {
       const key = item.id ?? item.externalId ?? `${item.name}-${page}-${Math.random().toString(16).slice(2, 8)}`;
