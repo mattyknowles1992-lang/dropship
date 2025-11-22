@@ -176,7 +176,8 @@ export async function fetchCjFeedAll(options?: FetchOptions): Promise<CjApiProdu
     const pageData = await fetchCjFeedPage(page, pageSize);
     if (pageData.length === 0) break;
     for (const item of pageData) {
-      all[item.id] = item;
+      const key = item.id ?? item.externalId ?? `${item.name}-${page}-${Math.random().toString(16).slice(2, 8)}`;
+      all[key] = item;
     }
     if (pageData.length < pageSize) break; // no more pages
   }
