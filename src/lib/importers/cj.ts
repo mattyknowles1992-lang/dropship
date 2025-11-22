@@ -287,13 +287,27 @@ export async function fetchCjFeed(): Promise<CjApiProduct[]> {
     "CJ-Access-Token": token,
   };
 
-  const res = await fetch(url, { headers });
+  // CJ product/list works as a POST with pagination; default to first page.
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ pageNum: 1, pageSize: 50 }),
+  });
   if (!res.ok) {
     throw new Error(`CJ API returned ${res.status}`);
   }
 
-  const data = (await res.json()) as CjApiProduct[] | { products?: CjApiProduct[] };
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray((data as any).products)) return (data as any).products;
+  const data = await res.json();
+
+  // Handle common CJ response shapes
+  if (Array.isArray(data)) return data as CjApiProduct[];
+  if (Array.isArray((data as any).products)) return (data as any).products;
+  if (Array.isArray((data as any).data)) return (data as any).data;
+  if (Array.isArray((data?.data as any)?.products)) return (data.data as any).products;
+  if (Array.isArray((data?.data as any)?.list)) return (data.data as any).list;
+  if (Array.isArray((data as any).result)) return (data as any).result;
+  if (Array.isArray((data?.result as any)?.list)) return (data.result as any).list;
+  if (Array.isArray((data as any).list)) return (data as any).list;
+
   throw new Error("Unexpected CJ API response shape");
 }
