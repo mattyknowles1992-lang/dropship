@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import type { Region } from "@/content/regions";
 
 type CjApiProduct = {
-  id: string;
+  id?: string;
   name: string;
   description?: string;
   sellPrice?: number;
@@ -22,12 +22,15 @@ type CjApiProduct = {
   warehouseId?: string;
 };
 
-function toSlug(name: string, id: string) {
+function toSlug(name: string, id?: string) {
   const base = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return `${base}-${id.slice(0, 6)}`;
+  if (id) {
+    return `${base}-${id.slice(0, 6)}`;
+  }
+  return base;
 }
 
 function normalizeProduct(input: CjApiProduct) {
@@ -38,9 +41,9 @@ function normalizeProduct(input: CjApiProduct) {
       : null;
 
   return {
-    externalId: input.id,
+    externalId: input.id ?? input.externalId,
     title: input.name,
-    slug: toSlug(input.name, input.id),
+    slug: toSlug(input.name, input.id ?? input.externalId ?? ""),
     description: input.description ?? null,
     price,
     compareAt,
@@ -95,13 +98,15 @@ async function fetchCjFeedPage(pageNum: number, pageSize: number): Promise<CjApi
   const token = process.env.CJ_API_TOKEN;
   if (!token) throw new Error("CJ_API_TOKEN is not set");
 
+  const size = Math.max(pageSize, 10); // CJ enforces min pageSize of 10
+
   const headers: Record<string, string> = {
     "CJ-Access-Token": token,
   };
 
   const query = new URLSearchParams({
     pageNum: String(pageNum),
-    pageSize: String(pageSize),
+    pageSize: String(size),
   }).toString();
 
   const res = await fetch(`${url}?${query}`, {
@@ -116,17 +121,49 @@ async function fetchCjFeedPage(pageNum: number, pageSize: number): Promise<CjApi
 
   const data = await res.json();
 
-  // Handle common CJ response shapes
-  if (Array.isArray(data)) return data as CjApiProduct[];
-  if (Array.isArray((data as any).products)) return (data as any).products;
-  if (Array.isArray((data as any).data)) return (data as any).data;
-  if (Array.isArray((data?.data as any)?.products)) return (data.data as any).products;
-  if (Array.isArray((data?.data as any)?.list)) return (data.data as any).list;
-  if (Array.isArray((data as any).result)) return (data as any).result;
-  if (Array.isArray((data?.result as any)?.list)) return (data.result as any).list;
-  if (Array.isArray((data as any).list)) return (data as any).list;
+  // Handle common CJ response shapes and map to our expected fields
+  const rawList =
+    (Array.isArray(data) && (data as any)) ||
+    (Array.isArray((data as any).products) && (data as any).products) ||
+    (Array.isArray((data as any).data) && (data as any).data) ||
+    (Array.isArray((data?.data as any)?.products) && (data.data as any).products) ||
+    (Array.isArray((data?.data as any)?.list) && (data.data as any).list) ||
+    (Array.isArray((data as any).result) && (data as any).result) ||
+    (Array.isArray((data?.result as any)?.list) && (data.result as any).list) ||
+    (Array.isArray((data as any).list) && (data as any).list) ||
+    [];
 
-  return [];
+  return (rawList as any[]).map((item) => {
+    const name =
+      item.productNameEn ||
+      (Array.isArray(item.productName) ? item.productName[0] : item.productName) ||
+      item.name ||
+      "Unnamed product";
+    const price = typeof item.sellPrice === "number" ? item.sellPrice : Number(item.sellPrice ?? 0);
+    const retail =
+      typeof item.retailPrice === "number" ? item.retailPrice : Number(item.retailPrice ?? price);
+
+    return {
+      id: item.pid ?? item.id ?? item.productSku,
+      name,
+      description: item.remark ?? item.description ?? null,
+      sellPrice: price,
+      retailPrice: retail,
+      mainImage: item.productImage ?? item.mainImage ?? item.image,
+      image: item.productImage ?? item.mainImage ?? item.image,
+      url: item.productUrl ?? item.sourceUrl ?? null,
+      tags: Array.isArray(item.tags) ? item.tags : undefined,
+      showInUk: true,
+      showInUs: true,
+      supplier: "cjdropshipping",
+      externalId: item.pid ?? item.id ?? item.productSku,
+      sourceUrl: item.productUrl ?? item.sourceUrl ?? null,
+      variants: item.variants ?? undefined,
+      warehouse: item.warehouse ?? item.warehouseName ?? undefined,
+      warehouseCode: item.warehouseCode ?? undefined,
+      warehouseId: item.warehouseId ?? undefined,
+    } as CjApiProduct;
+  });
 }
 
 export async function fetchCjFeedAll(options?: FetchOptions): Promise<CjApiProduct[]> {
