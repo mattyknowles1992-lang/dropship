@@ -80,6 +80,26 @@ model Category {
   updatedAt  DateTime  @updatedAt
 }
 
+// Raw CJ category data (for background sync / mapping only)
+model CjCategory {
+  id         String   @id        // CJ categoryId
+  name       String
+  parentId   String?
+  raw        Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Raw CJ product data (one row per CJ pid)
+model RawCjProduct {
+  id         String   @id        // CJ pid / productId
+  categoryId String?
+  data       Json               // full CJ item payload
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
 model Product {
   id          String    @id @default(cuid())
   title       String
