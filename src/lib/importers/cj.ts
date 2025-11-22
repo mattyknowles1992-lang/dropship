@@ -90,6 +90,7 @@ type FetchOptions = {
   pageSize?: number;
   maxPages?: number;
   throttleMs?: number;
+  startPage?: number;
 };
 
 function sleep(ms: number) {
@@ -195,10 +196,13 @@ export async function fetchCjFeedAll(options?: FetchOptions): Promise<CjApiProdu
   const pageSize = options?.pageSize && options.pageSize > 0 ? options.pageSize : 100;
   const maxPages = options?.maxPages && options.maxPages > 0 ? options.maxPages : 20;
   const throttleMs = typeof options?.throttleMs === "number" && options.throttleMs > 0 ? options.throttleMs : 0;
+  const startPage = options?.startPage && options.startPage > 0 ? options.startPage : 1;
 
   const all: Record<string, CjApiProduct> = {};
 
-  for (let page = 1; page <= maxPages; page += 1) {
+  const endPage = startPage + maxPages - 1;
+
+  for (let page = startPage; page <= endPage; page += 1) {
     const pageData = await fetchCjFeedPage(page, pageSize, throttleMs);
     if (pageData.length === 0) break;
     for (const item of pageData) {

@@ -24,6 +24,8 @@ export async function POST(request: Request) {
       products?: unknown;
       pageSize?: number;
       maxPages?: number;
+      throttleMs?: number;
+      startPage?: number;
     };
 
     const region: Region = body.region ?? "uk";
@@ -33,6 +35,8 @@ export async function POST(request: Request) {
         : await fetchCjFeedAll({
             pageSize: body.pageSize,
             maxPages: body.maxPages,
+            throttleMs: body.throttleMs,
+            startPage: body.startPage,
           });
 
     const result = await importCjProducts(region, feed);
