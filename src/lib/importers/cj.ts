@@ -96,14 +96,17 @@ async function fetchCjFeedPage(pageNum: number, pageSize: number): Promise<CjApi
   if (!token) throw new Error("CJ_API_TOKEN is not set");
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     "CJ-Access-Token": token,
   };
 
-  const res = await fetch(url, {
-    method: "POST",
+  const query = new URLSearchParams({
+    pageNum: String(pageNum),
+    pageSize: String(pageSize),
+  }).toString();
+
+  const res = await fetch(`${url}?${query}`, {
+    method: "GET",
     headers,
-    body: JSON.stringify({ pageNum, pageSize }),
   });
 
   if (!res.ok) {
