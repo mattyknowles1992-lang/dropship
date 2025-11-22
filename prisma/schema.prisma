@@ -87,6 +87,9 @@ model Product {
   description String?
   price       Decimal   @db.Decimal(10, 2)
   compareAt   Decimal?  @db.Decimal(10, 2)
+  costPrice   Decimal?  @db.Decimal(10, 2)
+  shippingUk  Decimal?  @db.Decimal(10, 2)
+  shippingUs  Decimal?  @db.Decimal(10, 2)
   image       String
   imageAlt    String?
   showInUk    Boolean   @default(true)
@@ -95,8 +98,12 @@ model Product {
   stock       Int?
   variants    Json?
   supplier    String?
+  supplierSku String?
   externalId  String?   @unique
   sourceUrl   String?
+  warehouseId   String?
+  warehouseCode String?
+  warehouseName String?
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id])
   createdAt   DateTime  @default(now())
