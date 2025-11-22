@@ -18,6 +18,8 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as {
       region?: Region;
       products?: unknown;
+      pageSize?: number;
+      maxPages?: number;
     };
 
     const region: Region = body.region ?? "uk";
