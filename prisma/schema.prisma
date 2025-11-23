@@ -100,6 +100,15 @@ model RawCjProduct {
   updatedAt  DateTime @updatedAt
 }
 
+// Raw AliExpress product data (for future background sync / mapping)
+model RawAeProduct {
+  id         String   @id        // AliExpress product id
+  data       Json
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
 model Product {
   id          String    @id @default(cuid())
   title       String
@@ -128,6 +137,7 @@ model Product {
   category    Category? @relation(fields: [categoryId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  groupItems  ProductGroupItem[]
 }
 
 model ProductGroup {
