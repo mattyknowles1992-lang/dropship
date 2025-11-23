@@ -153,6 +153,11 @@ type FetchOptions = {
   maxPages?: number;
   throttleMs?: number;
   startPage?: number;
+  categoryId?: string;
+  countryCode?: string;
+  keyWord?: string;
+  startSellPrice?: number;
+  endSellPrice?: number;
 };
 
 function sleep(ms: number) {
@@ -163,6 +168,7 @@ async function fetchCjFeedPage(
   pageNum: number,
   pageSize: number,
   throttleMs?: number,
+  options?: Partial<FetchOptions>,
 ): Promise<CjApiProduct[]> {
   const url = process.env.CJ_API_URL;
   if (!url) return [];
@@ -177,10 +183,20 @@ async function fetchCjFeedPage(
     "CJ-Access-Token": token,
   };
 
-  const query = new URLSearchParams({
-    pageNum: String(pageNum),
-    pageSize: String(size),
-  }).toString();
+  // CJ API v2.0 uses 'page' and 'size' parameters
+  const queryParams: Record<string, string> = {
+    page: String(pageNum),
+    size: String(size),
+  };
+
+  // Add optional filters
+  if (options?.categoryId) queryParams.categoryId = options.categoryId;
+  if (options?.countryCode) queryParams.countryCode = options.countryCode;
+  if (options?.keyWord) queryParams.keyWord = options.keyWord;
+  if (options?.startSellPrice !== undefined) queryParams.startSellPrice = String(options.startSellPrice);
+  if (options?.endSellPrice !== undefined) queryParams.endSellPrice = String(options.endSellPrice);
+
+  const query = new URLSearchParams(queryParams).toString();
 
   let attempt = 0;
   let res: Response | null = null;
@@ -265,7 +281,7 @@ export async function fetchCjFeedAll(options?: FetchOptions): Promise<CjApiProdu
   const endPage = startPage + maxPages - 1;
 
   for (let page = startPage; page <= endPage; page += 1) {
-    const pageData = await fetchCjFeedPage(page, pageSize, throttleMs);
+    const pageData = await fetchCjFeedPage(page, pageSize, throttleMs, options);
     if (pageData.length === 0) break;
     for (const item of pageData) {
       const key = item.id ?? item.externalId ?? `${item.name}-${page}-${Math.random().toString(16).slice(2, 8)}`;

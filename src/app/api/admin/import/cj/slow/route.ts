@@ -15,6 +15,11 @@ type ImportOptions = {
   pages?: number;
   startPage?: number;
   throttleMs?: number;
+  categoryId?: string;
+  countryCode?: string;
+  keyWord?: string;
+  startSellPrice?: number;
+  endSellPrice?: number;
 };
 
 export async function POST(request: Request) {
@@ -40,6 +45,11 @@ export async function POST(request: Request) {
       maxPages: pages,
       startPage,
       throttleMs,
+      categoryId: body.categoryId,
+      countryCode: body.countryCode,
+      keyWord: body.keyWord,
+      startSellPrice: body.startSellPrice,
+      endSellPrice: body.endSellPrice,
     });
 
     const result = await importCjProducts(region, feed);

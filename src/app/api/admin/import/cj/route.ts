@@ -26,6 +26,11 @@ export async function POST(request: Request) {
       maxPages?: number;
       throttleMs?: number;
       startPage?: number;
+      categoryId?: string;
+      countryCode?: string;
+      keyWord?: string;
+      startSellPrice?: number;
+      endSellPrice?: number;
     };
 
     const region: Region = body.region ?? "uk";
@@ -37,6 +42,11 @@ export async function POST(request: Request) {
             maxPages: body.maxPages,
             throttleMs: body.throttleMs,
             startPage: body.startPage,
+            categoryId: body.categoryId,
+            countryCode: body.countryCode,
+            keyWord: body.keyWord,
+            startSellPrice: body.startSellPrice,
+            endSellPrice: body.endSellPrice,
           });
 
     const result = await importCjProducts(region, feed);
