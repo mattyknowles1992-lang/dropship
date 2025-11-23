@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { calculateCjFreightQuote } from "@/lib/importers/cj";
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
@@ -30,18 +29,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "At least one item (vid + quantity) is required" }, { status: 400 });
   }
 
-  try {
-    const result = await calculateCjFreightQuote({
-      countryCode,
-      postCode: body.postCode,
-      province: body.province,
-      city: body.city,
-      items,
-    });
-
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error("Failed to calculate CJ freight", error);
-    return NextResponse.json({ error: "Failed to calculate freight" }, { status: 500 });
-  }
+  // Freight calculation via CJ is temporarily disabled while the importer
+  // focuses on catalog sync. This endpoint is kept as a stub so the build
+  // succeeds and callers get a clear message.
+  return NextResponse.json(
+    {
+      error: "CJ freight quote API is currently disabled",
+    },
+    { status: 503 },
+  );
 }

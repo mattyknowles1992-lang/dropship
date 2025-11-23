@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { Region } from "@/content/regions";
-import { importCjProducts } from "@/lib/importers/cj";
 
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -19,16 +18,8 @@ export async function POST(request: Request) {
     return NextResponse.redirect(new URL("/admin/cj-raw?error=not-found", request.url));
   }
 
-  const data = raw.data as any;
-  const source = (data?.original as any) ?? data;
-  const region: Region = (data?._region as Region) ?? "uk";
-
-  if (!source || typeof source !== "object") {
-    return NextResponse.redirect(new URL("/admin/cj-raw?error=bad-data", request.url));
-  }
-
-  await importCjProducts(region, [source]);
-
-  return NextResponse.redirect(new URL("/admin/cj-raw?promoted=1", request.url));
+  // Legacy CJ promote flow depended on the old importCjProducts helper. That
+  // path has been replaced by the listV2-based sync in /api/admin/cj-sync.
+  return NextResponse.redirect(new URL("/admin/cj-raw?error=deprecated", request.url));
 }
 

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { Region } from "@/content/regions";
-import { importCjProducts } from "@/lib/importers/cj";
 
 function isAuthorized(request: Request) {
   const token = process.env.ADMIN_API_TOKEN;
@@ -54,14 +53,16 @@ export async function POST(request: Request) {
     const region: Region = body.region ?? (data?._region as Region) ?? "uk";
     const overrides = body.overrides ?? {};
 
-    const feedItem = { ...source, ...overrides };
-
-    const result = await importCjProducts(region, [feedItem]);
-
-    return NextResponse.json({
-      promoted: result.imported,
-      region,
-    });
+    // Legacy promote flow is deprecated in favor of syncing from CJ into
+    // RawCjProduct/Product, then editing Products directly in the admin UI.
+    return NextResponse.json(
+      {
+        error: "CJ promote endpoint is deprecated. Edit products directly instead.",
+        region,
+        overrides,
+      },
+      { status: 410 },
+    );
   } catch (error) {
     const message =
       error instanceof Error

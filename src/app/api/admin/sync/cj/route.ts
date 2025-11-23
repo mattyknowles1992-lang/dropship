@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { syncCjVariantsForProduct } from "@/lib/importers/cj";
 
 function isAuthorized(request: Request) {
   const token = process.env.ADMIN_API_TOKEN;
@@ -33,33 +32,12 @@ export async function POST(request: Request) {
     take: body.limit && body.limit > 0 ? body.limit : undefined,
   });
 
-  const results: Array<{
-    productId: string;
-    variantCount?: number;
-    totalStock?: number;
-    error?: string;
-  }> = [];
-
-  for (const product of products) {
-    try {
-      const result = await syncCjVariantsForProduct(product as { id: string; externalId: string });
-      results.push({
-        productId: product.id,
-        variantCount: result.variantCount,
-        totalStock: result.totalStock,
-      });
-    } catch (error) {
-      console.error(`Failed to sync variants for product ${product.id}`, error);
-      results.push({
-        productId: product.id,
-        error: error instanceof Error ? error.message : "Sync failed",
-      });
-    }
-  }
-
+  // Variant-level sync via CJ is temporarily disabled while we stabilise the
+  // main product catalog importer. This endpoint now reports what it *would*
+  // act on without making external CJ calls.
   return NextResponse.json({
     processed: products.length,
-    synced: results.filter((r) => !r.error).length,
-    results,
+    message: "CJ variant sync is currently disabled; no external calls were made.",
+    productIds: products.map((p) => p.id),
   });
 }
