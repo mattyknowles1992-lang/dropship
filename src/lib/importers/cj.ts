@@ -1,91 +1,292 @@
 import { prisma } from "@/lib/db";
-import type { Region } from "@/content/regions";
 
-type CjApiProduct = {
+type CjListProduct = {
   id?: string;
-  name: string;
+  pid?: string;
+  nameEn?: string;
+  productNameEn?: string;
+  sku?: string;
+  spu?: string;
+  productSku?: string;
+  bigImage?: string;
+  productImage?: string;
+  sellPrice?: string;
+  nowPrice?: string;
+  discountPrice?: string;
+  currency?: string;
+  categoryId?: string;
+  threeCategoryName?: string | null;
+  warehouseInventoryNum?: number;
+  totalVerifiedInventory?: number;
   description?: string;
-  sellPrice?: number;
-  retailPrice?: number;
-  mainImage?: string;
-  image?: string;
-  url?: string;
-  tags?: string[];
-  showInUk?: boolean;
-  showInUs?: boolean;
-  supplier?: string;
-  externalId?: string;
-  sourceUrl?: string;
-  variants?: unknown;
-  warehouse?: string;
-  warehouseCode?: string;
-  warehouseId?: string;
 };
 
-function safeNumber(value: unknown): number | null {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null;
+type CjProductListEnvelope = {
+  code: number;
+  result: boolean;
+  message: string;
+  data?: {
+    pageSize: number;
+    pageNumber: number;
+    totalRecords: number;
+    totalPages: number;
+    content: Array<{
+      productList: CjListProduct[];
+      relatedCategoryList?: unknown;
+      storeList?: Array<{
+        warehouseId?: string;
+        warehouseName?: string;
+      }>;
+    }>;
+  };
+};
+
+function getCjToken(): string {
+  const token = process.env.CJ_API_TOKEN;
+  if (!token) {
+    throw new Error("CJ_API_TOKEN is not set");
   }
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
+  return token;
 }
 
-function toSlug(name: string, id?: string) {
-  const base = name
+function getCjUrl(): string {
+  const url = process.env.CJ_API_URL;
+  if (!url) {
+    throw new Error("CJ_API_URL is not set");
+  }
+  return url;
+}
+
+function getCjId(product: CjListProduct): string | null {
+  return product.pid ?? product.id ?? null;
+}
+
+function getTitle(product: CjListProduct): string | null {
+  return product.nameEn ?? product.productNameEn ?? null;
+}
+
+function getImage(product: CjListProduct): string | null {
+  return product.bigImage ?? product.productImage ?? null;
+}
+
+function getPrice(product: CjListProduct): number | null {
+  const source = product.nowPrice ?? product.discountPrice ?? product.sellPrice;
+  if (!source) return null;
+  const n = Number(source);
+  return Number.isFinite(n) ? n : null;
+}
+
+function slugify(input: string): string {
+  return input
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  if (id) {
-    return `${base}-${id.slice(0, 6)}`;
-  }
-  return base;
 }
 
-function buildTags(input: CjApiProduct) {
-  const tags = Array.isArray(input.tags) ? [...input.tags] : [];
-  if (input.warehouseId) tags.push(`warehouse:${input.warehouseId}`);
-  else if (input.warehouseCode) tags.push(`warehouse:${input.warehouseCode}`);
-  else if (input.warehouse) tags.push(`warehouse:${input.warehouse}`);
-  return tags;
+async function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function normalizeProduct(input: CjApiProduct) {
-  const baseSell = safeNumber(input.sellPrice);
-  const baseRetail = safeNumber(input.retailPrice);
-  const price = baseSell ?? baseRetail;
+async function fetchCjProductPage(pageNumber: number, pageSize: number): Promise<CjProductListEnvelope> {
+  const url = getCjUrl();
+  const token = getCjToken();
 
-  if (price == null || !Number.isFinite(price) || price <= 0) {
-    return null;
+  // listV2 expects GET with `page` and `size` query params
+  const params = new URLSearchParams({
+    page: String(pageNumber),
+    size: String(pageSize),
+  });
+
+  const response = await fetch(`${url}?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      "CJ-Access-Token": token,
+    },
+  });
+
+  if (response.status === 429) {
+    throw new Error("CJ API rate limited (429)");
   }
 
-  const compareAt =
-    baseRetail != null && baseRetail > price ? baseRetail : null;
-
-  const imageRaw = input.mainImage ?? input.image ?? "";
-  const image = typeof imageRaw === "string" ? imageRaw.trim() : "";
-
-  if (!image) {
-    return null;
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`CJ API error ${response.status}: ${text}`);
   }
 
-  return {
-    externalId: input.id ?? input.externalId,
-    title: input.name,
-    slug: toSlug(input.name, input.id ?? input.externalId ?? ""),
-    description: input.description ?? null,
-    price,
-    compareAt,
-    image,
-    imageAlt: input.name,
-    showInUk: input.showInUk ?? true,
-    showInUs: input.showInUs ?? true,
-    tags: buildTags(input),
-    supplier: "cjdropshipping",
-    sourceUrl: input.url ?? null,
-  };
+  const json = (await response.json()) as CjProductListEnvelope;
+  return json;
+}
+
+export type SyncSummary = {
+  pagesProcessed: number;
+  rawUpserts: number;
+  productUpserts: number;
+};
+
+export async function syncCjProducts(options?: { pageSize?: number; maxPages?: number }): Promise<SyncSummary> {
+  const pageSize = options?.pageSize && options.pageSize > 0 ? options.pageSize : 50;
+  const maxPages = options?.maxPages && options.maxPages > 0 ? options.maxPages : undefined;
+
+  let pageNumber = 1;
+  let totalPages = 1;
+  let pagesProcessed = 0;
+  let rawUpserts = 0;
+  let productUpserts = 0;
+
+  // Basic retry/backoff settings for 429s or transient errors.
+  const maxRetries = 5;
+
+  while (pageNumber <= totalPages && (!maxPages || pagesProcessed < maxPages)) {
+    let attempt = 0;
+    let pageData: CjProductListEnvelope | null = null;
+
+    // Retry loop for this page
+    while (attempt <= maxRetries) {
+      try {
+        pageData = await fetchCjProductPage(pageNumber, pageSize);
+        break;
+      } catch (error) {
+        attempt += 1;
+        const isLastAttempt = attempt > maxRetries;
+
+        // Simple exponential backoff, starting at 2s.
+        const delayMs = Math.min(60000, 2000 * attempt);
+
+        if (isLastAttempt) {
+          console.error("CJ sync: giving up on page", pageNumber, "error", error);
+          throw error;
+        }
+
+        console.warn(
+          "CJ sync: error fetching page",
+          pageNumber,
+          "attempt",
+          attempt,
+          "– waiting",
+          delayMs,
+          "ms before retry",
+        );
+        await sleep(delayMs);
+      }
+    }
+
+    if (!pageData || !pageData.data) {
+      break;
+    }
+
+    totalPages = pageData.data.totalPages ?? 1;
+
+    for (const block of pageData.data.content ?? []) {
+      const store = Array.isArray(block.storeList) ? block.storeList[0] : undefined;
+
+      for (const product of block.productList ?? []) {
+        const cjId = getCjId(product);
+        if (!cjId) continue;
+
+        const title = getTitle(product);
+        const image = getImage(product);
+        const price = getPrice(product);
+
+        // Upsert RawCjProduct with full payload.
+        await prisma.rawCjProduct.upsert({
+          where: { id: cjId },
+          update: {
+            categoryId: product.categoryId ?? null,
+            data: product,
+            lastSeenAt: new Date(),
+          },
+          create: {
+            id: cjId,
+            categoryId: product.categoryId ?? null,
+            data: product,
+          },
+        });
+        rawUpserts += 1;
+
+        // Seed/update Product so it appears in WMS/admin, but keep it non-live.
+        const data: Record<string, unknown> = {
+          supplier: "cj",
+          externalId: cjId,
+        };
+
+        if (title) {
+          data.title = title;
+          data.slug = slugify(title);
+          data.imageAlt = title;
+        }
+
+        if (image) {
+          data.image = image;
+        }
+
+        if (typeof product.description === "string" && product.description.trim().length > 0) {
+          data.description = product.description.trim();
+        }
+
+        if (price !== null) {
+          data.price = price;
+        }
+
+        if (typeof product.warehouseInventoryNum === "number") {
+          data.stock = product.warehouseInventoryNum;
+        } else if (typeof product.totalVerifiedInventory === "number") {
+          data.stock = product.totalVerifiedInventory;
+        }
+
+        if (product.categoryId) {
+          data.categoryId = product.categoryId;
+        }
+
+        if (store?.warehouseId) {
+          data.warehouseId = store.warehouseId;
+        }
+        if (store?.warehouseName) {
+          data.warehouseName = store.warehouseName;
+        }
+
+        // Never make imported products live automatically.
+        data.showInUk = false;
+        data.showInUs = false;
+
+        await prisma.product.upsert({
+          where: { externalId: cjId },
+          update: data,
+          create: {
+            title: (data.title as string) ?? `CJ Product ${cjId}`,
+            slug: (data.slug as string) ?? slugify(`cj-${cjId}`),
+            description: (data.description as string) ?? null,
+            price: (data.price as number) ?? 0,
+            compareAt: null,
+            costPrice: null,
+            shippingUk: null,
+            shippingUs: null,
+            image: (data.image as string) ?? "/products/placeholder.jpg",
+            imageAlt: (data.imageAlt as string) ?? null,
+            showInUk: false,
+            showInUs: false,
+            tags: [],
+            stock: (data.stock as number | undefined) ?? null,
+            supplier: "cj",
+            supplierSku:
+              product.sku ?? product.spu ?? product.productSku ?? undefined,
+            externalId: cjId,
+            sourceUrl: null,
+            warehouseId: (data.warehouseId as string | undefined) ?? null,
+            warehouseCode: null,
+            warehouseName: (data.warehouseName as string | undefined) ?? null,
+            categoryId: (data.categoryId as string | undefined) ?? null,
+          },
+        });
+
+        productUpserts += 1;
+      }
+    }
+
+    pagesProcessed += 1;
+    pageNumber += 1;
+  }
+
+  return { pagesProcessed, rawUpserts, productUpserts };
 }
 
 export async function importCjProducts(
@@ -154,10 +355,6 @@ type FetchOptions = {
   throttleMs?: number;
   startPage?: number;
 };
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 async function fetchCjFeedPage(
   pageNum: number,
