@@ -101,23 +101,22 @@ export async function importCjProducts(
       (original.name ? `anon-${original.name}` : undefined);
 
     if (rawId) {
+      const rawData: any = {
+        ...original,
+        _region: region,
+      };
+
       await prisma.rawCjProduct.upsert({
         where: { id: rawId },
         create: {
           id: rawId,
           categoryId: (original as any).categoryId ?? null,
-          data: {
-            ...original,
-            _region: region,
-          },
+          data: rawData,
           lastSeenAt: now,
         },
         update: {
           categoryId: (original as any).categoryId ?? null,
-          data: {
-            ...original,
-            _region: region,
-          },
+          data: rawData,
           lastSeenAt: now,
         },
       });
