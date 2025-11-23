@@ -14,6 +14,17 @@ type Product = {
   slug: string;
   image: string;
   imageAlt: string | null;
+   price: string;
+   compareAt: string | null;
+   costPrice: string | null;
+   shippingUk: string | null;
+   shippingUs: string | null;
+   stock: number | null;
+   supplier: string | null;
+   externalId: string | null;
+   warehouseId: string | null;
+   warehouseCode: string | null;
+   warehouseName: string | null;
   showInUk: boolean;
   showInUs: boolean;
   categoryId: string | null;
@@ -168,15 +179,34 @@ export default function AdminProductsPage() {
                   {product.title}
                 </p>
                 <p className="text-xs text-[#9CA3AF]">{product.slug}</p>
+                <p className="text-[11px] text-[#9CA3AF]">
+                  £{product.price}
+                  {product.compareAt ? (
+                    <span className="ml-1 line-through text-[#6B7280]">
+                      £{product.compareAt}
+                    </span>
+                  ) : null}
+                  {product.costPrice ? (
+                    <span className="ml-2 text-[#6EE7B7]">
+                      cost £{product.costPrice}
+                    </span>
+                  ) : null}
+                </p>
               </div>
-              <div className="text-[11px] text-[#9CA3AF]">
-                {product.categoryId
-                  ? categoryLookup[product.categoryId] ?? "Unassigned"
-                  : "No category"}
+              <div className="text-right text-[11px] text-[#9CA3AF]">
+                <div>
+                  {product.categoryId
+                    ? categoryLookup[product.categoryId] ?? "Unassigned"
+                    : "No category"}
+                </div>
+                <div>
+                  {product.supplier ?? "manual"}
+                  {product.externalId ? ` · ${product.externalId}` : ""}
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-3 text-[11px] text-[#E5E7EB]">
+            <div className="flex flex-wrap gap-3 text-[11px] text-[#E5E7EB]">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -197,6 +227,10 @@ export default function AdminProductsPage() {
                 />
                 Show on US
               </label>
+              <span className="ml-auto text-[11px] text-[#9CA3AF]">
+                Stock:{" "}
+                {typeof product.stock === "number" ? product.stock : "—"}
+              </span>
             </div>
 
             <div className="relative h-40 w-full overflow-hidden rounded-xl border border-[#374151] bg-black/60">
@@ -248,6 +282,22 @@ export default function AdminProductsPage() {
                 }
                 placeholder="/uploads/product.jpg"
               />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#9CA3AF]">
+              <span>
+                WH:{" "}
+                {product.warehouseName ||
+                  product.warehouseCode ||
+                  product.warehouseId ||
+                  "—"}
+              </span>
+              {product.shippingUk ? (
+                <span>UK ship: £{product.shippingUk}</span>
+              ) : null}
+              {product.shippingUs ? (
+                <span>US ship: £{product.shippingUs}</span>
+              ) : null}
             </div>
 
             <div className="flex items-center justify-between text-[11px] text-[#9CA3AF]">
