@@ -22,6 +22,17 @@ type CjApiProduct = {
   warehouseId?: string;
 };
 
+function safeNumber(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 function toSlug(name: string, id?: string) {
   const base = name
     .toLowerCase()
@@ -42,14 +53,21 @@ function buildTags(input: CjApiProduct) {
 }
 
 function normalizeProduct(input: CjApiProduct) {
-  const price = input.sellPrice ?? input.retailPrice ?? 0;
-  const compareAt =
-    input.retailPrice && input.sellPrice && input.retailPrice > input.sellPrice
-      ? input.retailPrice
-      : null;
+  const baseSell = safeNumber(input.sellPrice);
+  const baseRetail = safeNumber(input.retailPrice);
+  const price = baseSell ?? baseRetail;
 
-  const image = input.mainImage ?? input.image ?? "";
-  if (!image || price <= 0) {
+  if (price == null || !Number.isFinite(price) || price <= 0) {
+    return null;
+  }
+
+  const compareAt =
+    baseRetail != null && baseRetail > price ? baseRetail : null;
+
+  const imageRaw = input.mainImage ?? input.image ?? "";
+  const image = typeof imageRaw === "string" ? imageRaw.trim() : "";
+
+  if (!image) {
     return null;
   }
 
@@ -74,10 +92,42 @@ export async function importCjProducts(
   region: Region,
   feed: CjApiProduct[],
 ): Promise<{ imported: number }> {
-  const normalized = feed.map(normalizeProduct).filter((p): p is NonNullable<typeof p> => Boolean(p));
-
+  const now = new Date();
   let imported = 0;
-  for (const product of normalized) {
+  for (const original of feed) {
+    const rawId =
+      original.id ??
+      original.externalId ??
+      (original.name ? `anon-${original.name}` : undefined);
+
+    if (rawId) {
+      await prisma.rawCjProduct.upsert({
+        where: { id: rawId },
+        create: {
+          id: rawId,
+          categoryId: (original as any).categoryId ?? null,
+          data: {
+            ...original,
+            _region: region,
+          },
+          lastSeenAt: now,
+        },
+        update: {
+          categoryId: (original as any).categoryId ?? null,
+          data: {
+            ...original,
+            _region: region,
+          },
+          lastSeenAt: now,
+        },
+      });
+    }
+
+    const product = normalizeProduct(original);
+    if (!product) {
+      continue;
+    }
+
     // Skip items not meant for this region if flags are provided.
     if (
       (region === "uk" && product.showInUk === false) ||
@@ -178,9 +228,9 @@ async function fetchCjFeedPage(
       (Array.isArray(item.productName) ? item.productName[0] : item.productName) ||
       item.name ||
       "Unnamed product";
-    const price = typeof item.sellPrice === "number" ? item.sellPrice : Number(item.sellPrice ?? 0);
-    const retail =
-      typeof item.retailPrice === "number" ? item.retailPrice : Number(item.retailPrice ?? price);
+    const price = safeNumber(item.sellPrice);
+    const retailFallback = price ?? 0;
+    const retail = safeNumber(item.retailPrice) ?? retailFallback;
 
     return {
       id: item.pid ?? item.id ?? item.productSku,

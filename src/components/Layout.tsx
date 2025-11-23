@@ -43,9 +43,9 @@ export function Layout({ children, assets }: LayoutProps) {
             <Image
               src={resolvedAssets.logo}
               alt="Holly Jolly Savings logo"
-              width={150}
-              height={150}
-              className="rounded-full object-cover shadow-[0_0_24px_rgba(179,32,42,0.9)]"
+              width={100}
+              height={100}
+              className="rounded-full object-cover shadow-[0_0_40px_rgba(179,32,42,1)]"
             />
             <div className="leading-tight">
               <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0F3D2E]">
