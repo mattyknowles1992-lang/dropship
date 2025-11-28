@@ -1,0 +1,245 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String?
+  email        String    @unique
+  passwordHash String?
+  image        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  accounts     Account[]
+  sessions     Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Asset {
+  key       String  @id
+  path      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id         String    @id @default(cuid())
+  name       String
+  slug       String    @unique
+  description String?
+  showInUk   Boolean   @default(true)
+  showInUs   Boolean   @default(true)
+  products   Product[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+// Raw CJ category data (for background sync / mapping only)
+model CjCategory {
+  id         String   @id        // CJ categoryId
+  name       String
+  parentId   String?
+  raw        Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Raw CJ product data (one row per CJ pid)
+model RawCjProduct {
+  id         String   @id        // CJ pid / productId
+  categoryId String?
+  data       Json               // full CJ item payload
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Raw CJ variant data (one row per CJ vid)
+model RawCjVariant {
+  id         String   @id        // CJ vid
+  pid        String
+  sku        String?
+  data       Json
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Raw CJ stock per variant per warehouse
+model RawCjStock {
+  vid       String
+  areaId    String
+  countryCode String?
+  data      Json
+  lastSeenAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([vid, areaId])
+}
+
+// Raw CJ warehouse metadata
+model CjWarehouse {
+  id          String   @id // CJ areaId as string
+  name        String
+  countryCode String?
+  raw         Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Raw CJ product comments
+model RawCjComment {
+  id         String   @id        // commentId
+  pid        String
+  data       Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Raw AliExpress product data (for future background sync / mapping)
+model RawAeProduct {
+  id         String   @id        // AliExpress product id
+  data       Json
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  description String?
+  price       Decimal   @db.Decimal(10, 2)
+  priceUsd    Decimal?  @db.Decimal(10, 2)
+  compareAt   Decimal?  @db.Decimal(10, 2)
+  costPrice   Decimal?  @db.Decimal(10, 2)
+  shippingUk  Decimal?  @db.Decimal(10, 2)
+  shippingUs  Decimal?  @db.Decimal(10, 2)
+  image       String
+  imageAlt    String?
+  gallery     String[] @default([])
+  showInUk    Boolean   @default(true)
+  showInUs    Boolean   @default(true)
+  tags        String[]
+  pages       String[] @default([])
+  stock       Int?
+  variants    Json?
+  supplier    String?
+  supplierSku String?
+  externalId  String?   @unique
+  sourceUrl   String?
+  warehouseId   String?
+  warehouseCode String?
+  warehouseName String?
+  // CJ-specific fields (stored exactly as sent)
+  cjSellPrice        Decimal?  @db.Decimal(12, 2)
+  cjNowPrice         Decimal?  @db.Decimal(12, 2)
+  cjDiscountPrice    Decimal?  @db.Decimal(12, 2)
+  cjSuggestSellPrice String?
+  cjCurrency         String?
+  cjProductName      String?
+  cjProductNameEn    String?
+  cjSku              String?
+  cjSpu              String?
+  cjCategoryId       String?
+  cjCategoryName     String?
+  cjProductType      String?
+  cjProductUnit      String?
+  cjProductWeight    Decimal?  @db.Decimal(12, 2)
+  cjDescription      String?
+  cjMaterial         String?
+  cjPacking          String?
+  cjProductKey       String?
+  cjLogisticsProps   Json?
+  cjVideo            String[]
+  sourcePrice        Decimal?  @db.Decimal(12, 2)
+  sourceCurrency     String?
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  groupItems  ProductGroupItem[]
+}
+
+model ProductGroup {
+  id          String             @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  items       ProductGroupItem[]
+  rules       ProductGroupRule[]
+}
+
+model ProductGroupItem {
+  id        String   @id @default(cuid())
+  groupId   String
+  productId String
+  createdAt DateTime @default(now())
+
+  group   ProductGroup @relation(fields: [groupId], references: [id])
+  product Product      @relation(fields: [productId], references: [id])
+
+  @@unique([groupId, productId])
+}
+
+model ProductGroupRule {
+  id            String   @id @default(cuid())
+  groupId       String
+  name          String?
+  minQuantity   Int
+  bundlePrice   Decimal  @db.Decimal(10, 2)
+  perOrderLimit Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  group ProductGroup @relation(fields: [groupId], references: [id])
+}

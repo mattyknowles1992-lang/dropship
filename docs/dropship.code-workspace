@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"name": "dropship",
+			"path": ".."
+		},
+		{
+			"path": "../../Users/mattw/OneDrive/Desktop/VPNlogin"
+		}
+	],
+	"settings": {
+		"powershell.cwd": "dropship"
+	}
+}
